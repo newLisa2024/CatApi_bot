@@ -1,14 +1,16 @@
 import asyncio
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
-import random
+from translate import Translator
 import requests
 
 from config import TOKEN, THE_CAT_API_KEY
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(bot=bot)
+
+translator = Translator(to_lang="ru")
 
 def get_cat_breeds():
     url = 'https://api.thecatapi.com/v1/breeds'
@@ -40,17 +42,26 @@ async def send_cat_info(message: Message):
     breed_info = get_breed_info(breed_name)
     if breed_info:
         cat_image_url = get_cat_image_by_breed(breed_info['id'])
-        info = (f'Порода: {breed_info["name"]}\n'
-                )
-        return
-
-    await message.answer_photo(random.choice(get_cat_image_by_breed(get_breed_info(message.text)['id'])))
-    await message.answer(get_breed_info(message.text)['description'])
-
-# Вот в этом промежутке мы будем работать и писать новый код
+        translated_name = translator.translate(breed_info['name'])
+        translated_description = translator.translate(breed_info['description'])
+        info = (f'Порода - {translated_name}\n'
+                f'Описание - {translated_description}\n'
+                f'Продолжительность жизни - {breed_info["life_span"]} лет')
+        await message.answer_photo(photo=cat_image_url, caption=info)
+    else:
+        await message.answer('Порода не найдена.')
 
 async def main():
-   await dp.start_polling(bot)
+    await dp.start_polling(bot, skip_updates=True)
 
 if __name__ == '__main__':
-   asyncio.run(main())
+    asyncio.run(main())
+
+
+
+
+
+
+
+
+
